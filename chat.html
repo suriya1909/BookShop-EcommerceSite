@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat</title>
+    <link rel="stylesheet" href="styles/styles.css" />
+    <link rel="stylesheet" href="styles/bootstrap.min.css">
+    <script src="scripts/socket.io.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <style>
+      .ad {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0.5rem;
+      }
+      .ad a {
+        display: block;
+        width: 90px;
+        text-decoration: none;
+        text-align: center;
+        padding: 9px 3px;
+        background-color: brown;
+        color: rgb(48, 5, 5);
+      }
+      .table 
+      {
+        width: 98%;
+        border: solid 1px lightgray;
+        border-collapse: collapse;
+       
+      }
+      .table th, td {
+        padding: .5rem;
+        border: solid 1px lightgray;
+      }
+      
+
+    #msg {
+      color: rgb(39, 12, 12);
+    }
+
+    #chat {
+      color: rgb(37, 27, 27);
+    }
+
+    #div1 {
+      margin: 25px auto;
+      width: 60%;
+      border: 1px solid black;
+      padding: 30px;
+      background-color: #dcfcdc;
+      align-content: center;
+      border-radius: 10px;
+      min-height: 400px;
+    }
+
+    img {
+      width: 400px;
+      height: 250px;
+    }
+
+    h1 {
+      font-family: Arial;
+      font-size: 40pt;
+      color: rgb(44, 17, 17);
+    }
+
+    #msg {
+      color: rgb(30, 178, 184);
+    }
+
+    #chat {
+      color: rgb(43, 23, 23);
+    }
+    </style>
+    <script>
+      $(() => {
+          var carts =sessionStorage.getItem("cart")
+          ? JSON.parse(sessionStorage.getItem("cart"))
+          : [];
+          var total = 0;
+          carts.forEach(c=>{
+            total +=Number(c.price)*Number(c.qty);
+            $('#tbody').append(`
+            <tr>
+                    <td>${c.name}</td>
+                    <td>${c.price}</td>
+                    <td>${c.qty}</td>
+                    <td>${Number(c.price)*Number(c.qty)}</td>
+                </tr>
+            `);
+          });
+          $('#tbody').append(`
+                <tr>
+                    <td colspan="3"></td>
+                    <td>${total}</td>
+                </tr>
+            `)
+      });
+    </script>
+    <script>
+      var socket;
+
+      $(function () {
+        socket = io.connect('http://localhost:8888');
+        $('#btnSend').click(userInformation);
+        $('#btnChat').click(chatMessages);
+        $('#txtName').keypress(processEnterPress);
+        $('#txtName').focus();
+
+        socket.on('greetings', function (greet) {
+          $('#msg').html(greet);
+          setTimeout(function () {
+            $('#msg').fadeOut(3000);
+          }, 5000);
+
+        })
+        socket.on('updateChat', function (user, messages) {
+          $('#chat').append('<b>' + user + ': </b>' + messages + '<br/>');
+        })
+        //upload Picture
+        socket.on('addimage', function (user, myImage, myFile) {
+          $('#images').append('<br/><b>' + user + ': </b>' + '<a target="_blank" href="' + myImage + '"><img width="200" height="200" style="border-radius:10px" src="' + myImage + '" /></a>');
+        })
+        $(function () {
+          $('#btnImageFile').on('change', function (e) {
+            var file = e.originalEvent.target.files[0];
+            var reader = new FileReader();
+            reader.onload = function (evt) {
+              socket.emit('userImage', evt.target.result);
+            };
+            reader.readAsDataURL(file);
+          })
+        })
+      })
+      function userInformation() {
+        var user = $('#txtName').val();
+        if (user == '') {
+          alert('Name cannot be left blank');
+          $('#txtName').focus();
+          return;
+        }
+        socket.emit('user', user);
+        $('#txtName').val('');
+        $('#btnChat').show();
+        $('#btnImageFile').show();
+        $('#btnSend').hide();
+        $("#txtName").attr("placeholder", "Write your message here.");
+        $('#txtName').focus();
+      }
+      function chatMessages() {
+        socket.emit('chatSMS', $('#txtName').val());
+        $('#txtName').val('');
+        $('#txtName').focus();
+      }
+      function processEnterPress(e) {
+        if (e.which == 13) {
+          e.preventDefault();
+          $(this).blur();
+          var confrm = $("#txtName").attr("placeholder");
+          if (confrm == 'Enter your name') {
+            $('#btnSend').focus().click();
+          }
+          else {
+            $('#btnChat').focus().click();
+          }
+
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <nav id="nav">
+      <span class="brand">bOokLoVeRs.com</sup></span>
+      <span class="fixer"></span>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="ecommerce.html">Ecommerce</a></li>
+          <li><a href="cart.html">Cart</a></li>
+          <li><a href="admin.html">Admin</a></li>
+          <li><a href="chat.html">Chat Service</a></li>
+        </ul>
+    </nav>
+
+    <div class="">
+      <div class='container' id='div1'>
+        <h1><b> Let's Go For Chat ! </b> </h1>
+        <form class="form-horizontal">
+          <div class="form-group">
+            <label></label>
+            <div id='msg'></div>
+          </div>
+          <div class="form-group">
+            <label></label>
+            <div id='chat'></div>
+            <div id='images'></div>
+          </div>
+          <div class="form-group">
+            <label></label>
+            <div>
+              <input class="form-control" id="txtName" placeholder="Enter your name please">
+            </div>
+          </div>
+      
+          <div class="form-group">
+            <div>
+              <button type="button" id='btnSend' class="btn btn-primary">Join Chat</button>
+              <button type="button" id='btnChat' style='display:none' class="btn btn-primary">Send</button>
+      
+              <label class="btn btn-default btn-file" id='btnImageFile' style='display:none'>
+                Add Files <input type="file" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <footer class="footer">
+      <p>www.booklovers.com</p>
+    </footer>
+  </body>
+</html>
